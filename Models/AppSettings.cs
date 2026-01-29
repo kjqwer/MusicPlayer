@@ -12,7 +12,7 @@ public class AppSettings
     public string? LastPlaylistId { get; set; }
     public double LastPosition { get; set; }
     public bool MinimizeToTray { get; set; } = true;
-    public bool UseWasapiExclusive { get; set; } = true; // WASAPI独占模式实现HiFi
+    public bool UseWasapiExclusive { get; set; } = false; // 默认共享模式，允许多应用同时播放
     public int AudioLatency { get; set; } = 100; // 音频延迟(ms)
     public double WindowWidth { get; set; } = 400;
     public double WindowHeight { get; set; } = 600;

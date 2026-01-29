@@ -28,6 +28,11 @@ public class MediaSessionService : IDisposable
         // 创建MediaPlayer实例 - 这会自动创建一个系统媒体会话
         _mediaPlayer = new MediaPlayer();
         
+        // 禁用MediaPlayer的音频输出，我们只用它来获取SMTC控制
+        _mediaPlayer.Volume = 0;
+        _mediaPlayer.IsMuted = true;
+        _mediaPlayer.AutoPlay = false;
+        
         // 获取与此MediaPlayer关联的SMTC
         _smtc = _mediaPlayer.SystemMediaTransportControls;
         

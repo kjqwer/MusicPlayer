@@ -146,3 +146,57 @@ public class StringEmptyToVisibilityConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+/// <summary>
+/// 随机播放状态转提示文字
+/// </summary>
+public class BoolToShuffleTooltipConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool b && b ? "随机播放：开" : "随机播放：关";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// 播放/暂停状态转提示文字
+/// </summary>
+public class BoolToPlayPauseTooltipConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool b && b ? "暂停" : "播放";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// 循环模式转提示文字
+/// </summary>
+public class RepeatModeToTooltipConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is RepeatMode mode ? mode switch
+        {
+            RepeatMode.None => "循环：关闭",
+            RepeatMode.All => "循环：列表循环",
+            RepeatMode.One => "循环：单曲循环",
+            _ => "循环"
+        } : "循环";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

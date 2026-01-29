@@ -24,6 +24,9 @@
         <converters:BoolToFavoriteIconConverter x:Key="BoolToFavorite"/>
         <converters:BoolToShuffleOpacityConverter x:Key="BoolToShuffleOpacity"/>
         <converters:RepeatModeToOpacityConverter x:Key="RepeatModeToOpacity"/>
+        <converters:BoolToShuffleTooltipConverter x:Key="BoolToShuffleTooltip"/>
+        <converters:BoolToPlayPauseTooltipConverter x:Key="BoolToPlayPauseTooltip"/>
+        <converters:RepeatModeToTooltipConverter x:Key="RepeatModeToTooltip"/>
         <converters:PlaylistTypeToIconConverter x:Key="PlaylistTypeToIcon"/>
         <converters:NullToVisibilityConverter x:Key="NullToVisibility"/>
         <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
@@ -400,19 +403,24 @@
                             <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
                                 <Button Content="⇄" Style="{StaticResource Style.Button.Icon}"
                                         Opacity="{Binding ShuffleMode, Converter={StaticResource BoolToShuffleOpacity}}"
-                                        Click="Shuffle_Click" Margin="0,0,16,0"/>
+                                        Click="Shuffle_Click" Margin="0,0,16,0"
+                                        ToolTip="{Binding ShuffleMode, Converter={StaticResource BoolToShuffleTooltip}}"/>
                                 
-                                <Button Content="‹‹" Style="{StaticResource Style.Button.Icon}" Click="Previous_Click" Margin="0,0,16,0"/>
+                                <Button Content="‹‹" Style="{StaticResource Style.Button.Icon}" Click="Previous_Click" Margin="0,0,16,0"
+                                        ToolTip="上一首"/>
                                 
                                 <Button Content="{Binding IsPlaying, Converter={StaticResource BoolToPlayPause}}" 
                                         Style="{StaticResource Style.Button.Play}" 
-                                        Click="PlayPause_Click"/>
+                                        Click="PlayPause_Click"
+                                        ToolTip="{Binding IsPlaying, Converter={StaticResource BoolToPlayPauseTooltip}}"/>
                                 
-                                <Button Content="››" Style="{StaticResource Style.Button.Icon}" Click="Next_Click" Margin="16,0,0,0"/>
+                                <Button Content="››" Style="{StaticResource Style.Button.Icon}" Click="Next_Click" Margin="16,0,0,0"
+                                        ToolTip="下一首"/>
                                 
                                 <Button Content="{Binding RepeatModeText}" Style="{StaticResource Style.Button.Icon}"
                                         Opacity="{Binding RepeatMode, Converter={StaticResource RepeatModeToOpacity}}"
-                                        Click="Repeat_Click" Margin="16,0,0,0"/>
+                                        Click="Repeat_Click" Margin="16,0,0,0"
+                                        ToolTip="{Binding RepeatMode, Converter={StaticResource RepeatModeToTooltip}}"/>
                             </StackPanel>
 
                             <!-- Progress Bar -->

@@ -35,7 +35,8 @@ public class AudioEngine : IDisposable
         }
     }
 
-    public bool UseWasapiExclusive { get; set; } = true;
+    // 默认使用共享模式，允许其他应用同时播放音频
+    public bool UseWasapiExclusive { get; set; } = false;
     public int Latency { get; set; } = 100;
 
     /// <summary>
