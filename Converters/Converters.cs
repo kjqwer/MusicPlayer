@@ -26,7 +26,7 @@ public class BoolToPlayPauseIconConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        return value is bool isPlaying && isPlaying ? "⏸" : "▶";
+        return value is bool isPlaying && isPlaying ? "❚❚" : "▶";
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -39,7 +39,7 @@ public class BoolToFavoriteIconConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        return value is bool isFavorite && isFavorite ? "❤️" : "🤍";
+        return value is bool isFavorite && isFavorite ? "★" : "☆";
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -80,10 +80,10 @@ public class PlaylistTypeToIconConverter : IValueConverter
     {
         return value switch
         {
-            PlaylistType.Favorites => "❤️",
-            PlaylistType.Folder => "📁",
-            PlaylistType.Recent => "🕐",
-            _ => "🎵"
+            PlaylistType.Favorites => "★",
+            PlaylistType.Folder => "▣",
+            PlaylistType.Recent => "↺",
+            _ => "♪"
         };
     }
 
@@ -125,6 +125,23 @@ public class ProgressToWidthConverter : IMultiValueConverter
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// 字符串为空时显示，否则隐藏（用于占位符）
+/// </summary>
+public class StringEmptyToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        bool isEmpty = string.IsNullOrEmpty(value as string);
+        return isEmpty ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
     }

@@ -120,10 +120,10 @@ public class MainViewModel : INotifyPropertyChanged
 
     public string RepeatModeText => RepeatMode switch
     {
-        RepeatMode.None => "🔁",
-        RepeatMode.All => "🔁",
-        RepeatMode.One => "🔂",
-        _ => "🔁"
+        RepeatMode.None => "↻",
+        RepeatMode.All => "↻",
+        RepeatMode.One => "↻1",
+        _ => "↻"
     };
 
     private bool _compactMode;
@@ -132,6 +132,30 @@ public class MainViewModel : INotifyPropertyChanged
         get => _compactMode;
         set { _compactMode = value; OnPropertyChanged(); }
     }
+
+    private string _searchText = string.Empty;
+    public string SearchText
+    {
+        get => _searchText;
+        set 
+        { 
+            _searchText = value; 
+            OnPropertyChanged(); 
+            OnPropertyChanged(nameof(HasSearchText));
+            FilterSongs();
+        }
+    }
+
+    public bool HasSearchText => !string.IsNullOrWhiteSpace(SearchText);
+
+    private int _filteredSongsCount;
+    public int FilteredSongsCount
+    {
+        get => _filteredSongsCount;
+        set { _filteredSongsCount = value; OnPropertyChanged(); }
+    }
+
+    private List<MusicFile> _allSongs = new(); // 保存原始列表用于搜索
 
     public Playlist Favorites => _playlistService.Favorites;
     public AppSettings Settings => _playlistService.Settings;
@@ -231,12 +255,41 @@ public class MainViewModel : INotifyPropertyChanged
     private void LoadPlaylistSongs()
     {
         Songs.Clear();
+        _allSongs.Clear();
         ResetShuffleHistory(); // 切换播放列表时重置随机历史
+        SearchText = string.Empty; // 切换播放列表时清空搜索
         
         if (CurrentPlaylist == null) return;
         
         foreach (var song in CurrentPlaylist.Songs)
+        {
             Songs.Add(song);
+            _allSongs.Add(song);
+        }
+        
+        FilteredSongsCount = Songs.Count;
+    }
+
+    private void FilterSongs()
+    {
+        Songs.Clear();
+        
+        var filtered = string.IsNullOrWhiteSpace(SearchText) 
+            ? _allSongs 
+            : _allSongs.Where(s => 
+                s.DisplayName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                s.Artist.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                s.Album.Contains(SearchText, StringComparison.OrdinalIgnoreCase)).ToList();
+        
+        foreach (var song in filtered)
+            Songs.Add(song);
+        
+        FilteredSongsCount = Songs.Count;
+    }
+
+    public void ClearSearch()
+    {
+        SearchText = string.Empty;
     }
 
     public void PlaySong(MusicFile song)
@@ -493,6 +546,16 @@ public class MainViewModel : INotifyPropertyChanged
             }
         }
         playlist.UpdatedAt = DateTime.Now;
+        
+        if (CurrentPlaylist == playlist)
+            LoadPlaylistSongs();
+    }
+
+    public async Task RefreshFolderPlaylistAsync(Playlist playlist)
+    {
+        if (playlist.Type != PlaylistType.Folder) return;
+        
+        await _playlistService.RefreshFolderPlaylistAsync(playlist);
         
         if (CurrentPlaylist == playlist)
             LoadPlaylistSongs();

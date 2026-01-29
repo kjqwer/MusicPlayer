@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using MusicPlayer.Models;
@@ -13,6 +14,7 @@ using Button = System.Windows.Controls.Button;
 using DragEventArgs = System.Windows.DragEventArgs;
 using DataFormats = System.Windows.DataFormats;
 using MessageBox = System.Windows.MessageBox;
+using MenuItem = System.Windows.Controls.MenuItem;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
@@ -233,6 +235,12 @@ public partial class MainWindow : Window
         _viewModel.CycleRepeatMode();
     }
 
+    private void ClearSearch_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.ClearSearch();
+        SearchBox.Focus();
+    }
+
     private void ProgressSlider_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
     {
         _isDraggingSlider = true;
@@ -274,6 +282,14 @@ public partial class MainWindow : Window
         if (sender is Button btn && btn.Tag is MusicFile song)
         {
             _viewModel.ToggleFavorite(song);
+        }
+    }
+
+    private void CurrentSongFavorite_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.CurrentSong != null)
+        {
+            _viewModel.ToggleFavorite(_viewModel.CurrentSong);
         }
     }
 
@@ -369,6 +385,98 @@ public partial class MainWindow : Window
         {
             await _viewModel.ExportPlaylistAsync(_viewModel.CurrentPlaylist, dialog.FileName);
             MessageBox.Show("播放列表已导出", "导出成功");
+        }
+    }
+
+    private async void AddToPlaylist_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.DataContext is Playlist playlist)
+        {
+            MusicFile? targetSong = null;
+
+            if (menuItem.CommandParameter is MusicFile paramSong)
+            {
+                targetSong = paramSong;
+            }
+            else if (SongList.SelectedItem is MusicFile selectedSong)
+            {
+                targetSong = selectedSong;
+            }
+
+            if (targetSong != null)
+            {
+                await _viewModel.AddFilesToPlaylistAsync(playlist, new[] { targetSong.FilePath });
+            }
+        }
+    }
+
+    private void SongContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        // 动态生成播放列表子菜单
+        AddToPlaylistMenu.Items.Clear();
+        
+        foreach (var playlist in _viewModel.Playlists.Where(p => p.Type == PlaylistType.Custom || p.Type == PlaylistType.Folder))
+        {
+            var menuItem = new MenuItem { Header = playlist.Name, Tag = playlist };
+            menuItem.Click += async (s, args) =>
+            {
+                if (SongList.SelectedItem is MusicFile song)
+                {
+                    await _viewModel.AddFilesToPlaylistAsync(playlist, new[] { song.FilePath });
+                    MessageBox.Show($"已添加到 {playlist.Name}", "成功");
+                }
+            };
+            AddToPlaylistMenu.Items.Add(menuItem);
+        }
+        
+        if (AddToPlaylistMenu.Items.Count == 0)
+        {
+            AddToPlaylistMenu.Items.Add(new MenuItem { Header = "(无可用播放列表)", IsEnabled = false });
+        }
+    }
+
+    private void ContextMenu_ToggleFavorite_Click(object sender, RoutedEventArgs e)
+    {
+        if (SongList.SelectedItem is MusicFile song)
+        {
+            _viewModel.ToggleFavorite(song);
+        }
+    }
+
+    private void DeletePlaylist_Click(object sender, RoutedEventArgs e)
+    {
+        if (PlaylistList.SelectedItem is Playlist playlist)
+        {
+            if (playlist.Type == PlaylistType.Favorites)
+            {
+                MessageBox.Show("收藏夹不能删除", "提示");
+                return;
+            }
+            
+            var result = MessageBox.Show($"确定要删除播放列表 \"{playlist.Name}\" 吗？", "确认删除", 
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                _viewModel.DeletePlaylist(playlist);
+            }
+        }
+    }
+
+    private async void RefreshPlaylist_Click(object sender, RoutedEventArgs e)
+    {
+        if (PlaylistList.SelectedItem is Playlist playlist && playlist.Type == PlaylistType.Folder)
+        {
+            await _viewModel.RefreshFolderPlaylistAsync(playlist);
+            MessageBox.Show("播放列表已刷新", "成功");
+        }
+    }
+
+    private void OnPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is ListBoxItem item)
+        {
+            item.IsSelected = true;
         }
     }
 
