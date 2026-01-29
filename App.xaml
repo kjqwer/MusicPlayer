@@ -1,0 +1,15 @@
+﻿<Application x:Class="MusicPlayer.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MusicPlayer"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <!-- 全局字体设置 -->
+        <Style TargetType="Window">
+            <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei UI"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei UI"/>
+        </Style>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,457 @@
+<Window x:Class="MusicPlayer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MusicPlayer"
+        xmlns:converters="clr-namespace:MusicPlayer.Converters"
+        xmlns:tb="http://www.hardcodet.net/taskbar"
+        mc:Ignorable="d"
+        Title="HiFi Music Player" 
+        MinWidth="320" MinHeight="200"
+        Width="420" Height="640"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="CanResizeWithGrip"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing"
+        StateChanged="Window_StateChanged">
+
+    <Window.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <converters:BoolToPlayPauseIconConverter x:Key="BoolToPlayPause"/>
+        <converters:BoolToFavoriteIconConverter x:Key="BoolToFavorite"/>
+        <converters:BoolToShuffleOpacityConverter x:Key="BoolToShuffleOpacity"/>
+        <converters:RepeatModeToOpacityConverter x:Key="RepeatModeToOpacity"/>
+        <converters:PlaylistTypeToIconConverter x:Key="PlaylistTypeToIcon"/>
+        <converters:NullToVisibilityConverter x:Key="NullToVisibility"/>
+        <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
+
+        <!-- 现代深色主题配色 - 优化版 -->
+        <SolidColorBrush x:Key="BackgroundDark" Color="#0B0B0F"/>
+        <SolidColorBrush x:Key="BackgroundCard" Color="#141418"/>
+        <SolidColorBrush x:Key="BackgroundHover" Color="#1C1C22"/>
+        <SolidColorBrush x:Key="AccentColor" Color="#4F8DFF"/>
+        <SolidColorBrush x:Key="AccentGlow" Color="#6AA8FF"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#F5F5F7"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#8E8E93"/>
+        <SolidColorBrush x:Key="BorderSubtle" Color="#2A2A2E"/>
+
+        <!-- 按钮样式 -->
+        <Style x:Key="ControlButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="22"
+                                x:Name="border">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BackgroundHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PlayButton" TargetType="Button" BasedOn="{StaticResource ControlButton}">
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="28"
+                                x:Name="border">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#4F8DFF" BlurRadius="18" ShadowDepth="0" Opacity="0.35"/>
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource AccentGlow}"/>
+                                <Setter TargetName="border" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#6AA8FF" BlurRadius="20" ShadowDepth="0" Opacity="0.45"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SmallButton" TargetType="Button" BasedOn="{StaticResource ControlButton}">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="FontSize" Value="16"/>
+        </Style>
+
+        <!-- 列表项样式 -->
+        <Style x:Key="SongListItem" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="4,2"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}"
+                                x:Name="border">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BackgroundHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource AccentColor}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid>
+        <!-- 系统托盘图标 -->
+        <tb:TaskbarIcon x:Name="TrayIcon"
+                        IconSource="/Resources/favicon.ico"
+                        ToolTipText="HiFi Music Player"
+                        TrayMouseDoubleClick="TrayIcon_TrayMouseDoubleClick">
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="显示主窗口" Click="ShowWindow_Click"/>
+                    <MenuItem Header="播放/暂停" Click="PlayPause_Click"/>
+                    <MenuItem Header="下一首" Click="Next_Click"/>
+                    <MenuItem Header="上一首" Click="Previous_Click"/>
+                    <Separator/>
+                    <MenuItem Header="退出" Click="Exit_Click"/>
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
+
+        <Border Background="{StaticResource BackgroundDark}" CornerRadius="16" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 标题栏 -->
+            <Border Grid.Row="0" Background="{StaticResource BackgroundCard}" CornerRadius="16,16,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="16,0">
+                        <TextBlock Text="♪" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="Music" Foreground="{StaticResource TextPrimary}" 
+                                   FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        <Border Background="{StaticResource AccentColor}" CornerRadius="4" Padding="6,2" 
+                                Margin="8,0,0,0" VerticalAlignment="Center"
+                                Visibility="{Binding IsPlaying, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="HiFi" FontSize="10" Foreground="White" FontWeight="Bold"/>
+                        </Border>
+                    </StackPanel>
+                    
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="🗕" Style="{StaticResource SmallButton}" Click="Minimize_Click"/>
+                        <Button Content="⬜" Style="{StaticResource SmallButton}" Click="Compact_Click" ToolTip="小屏模式"/>
+                        <Button Content="✕" Style="{StaticResource SmallButton}" Click="Close_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 主内容区 -->
+            <Grid Grid.Row="1" Margin="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 左侧播放列表面板 -->
+                <Border Grid.Column="0" Background="{StaticResource BackgroundCard}" CornerRadius="12" Margin="0,0,8,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="播放列表" Foreground="{StaticResource TextSecondary}" 
+                                   FontSize="12" Margin="12,12,12,8"/>
+
+                        <ListBox Grid.Row="1" x:Name="PlaylistList" 
+                                 ItemsSource="{Binding Playlists}"
+                                 SelectedItem="{Binding CurrentPlaylist}"
+                                 Background="Transparent" BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource SongListItem}">
+                                    <Setter Property="Padding" Value="10,8"/>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Type, Converter={StaticResource PlaylistTypeToIcon}}" 
+                                                   FontSize="14" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Name}" Foreground="{StaticResource TextPrimary}"
+                                                   FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="80"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <StackPanel Grid.Row="2" Margin="8">
+                            <Button Content="➕ 新建" Style="{StaticResource SmallButton}" 
+                                    Width="Auto" HorizontalAlignment="Stretch" FontSize="12"
+                                    Click="NewPlaylist_Click"/>
+                            <Button Content="📁 文件夹" Style="{StaticResource SmallButton}" 
+                                    Width="Auto" HorizontalAlignment="Stretch" FontSize="12" Margin="0,4,0,0"
+                                    Click="AddFolder_Click"/>
+                            <Button Content="📥 导入" Style="{StaticResource SmallButton}" 
+                                    Width="Auto" HorizontalAlignment="Stretch" FontSize="12" Margin="0,4,0,0"
+                                    Click="ImportPlaylist_Click"/>
+                            <Button Content="📤 导出" Style="{StaticResource SmallButton}" 
+                                    Width="Auto" HorizontalAlignment="Stretch" FontSize="12" Margin="0,4,0,0"
+                                    Click="ExportPlaylist_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- 右侧歌曲列表 -->
+                <Border Grid.Column="1" Background="{StaticResource BackgroundCard}" CornerRadius="12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="12,12,12,8">
+                            <TextBlock Text="{Binding CurrentPlaylist.Name, FallbackValue='选择播放列表'}" 
+                                       Foreground="{StaticResource TextPrimary}" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding Songs.Count, StringFormat={}{0} 首}" 
+                                       Foreground="{StaticResource TextSecondary}" FontSize="12" 
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <ListBox Grid.Row="1" x:Name="SongList"
+                                 ItemsSource="{Binding Songs}"
+                                 SelectedItem="{Binding CurrentSong}"
+                                 Background="Transparent" BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 MouseDoubleClick="SongList_MouseDoubleClick"
+                                 AllowDrop="True" Drop="SongList_Drop"
+                                 VirtualizingStackPanel.IsVirtualizing="True"
+                                 VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                 ScrollViewer.IsDeferredScrollingEnabled="True">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource SongListItem}"/>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding DisplayName}" 
+                                                       Foreground="{StaticResource TextPrimary}"
+                                                       FontSize="14" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Artist}" 
+                                                       Foreground="{StaticResource TextSecondary}"
+                                                       FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1" Text="{Binding DurationText}" 
+                                                   Foreground="{StaticResource TextSecondary}"
+                                                   FontSize="12" VerticalAlignment="Center" Margin="8,0"/>
+
+                                        <Button Grid.Column="2" 
+                                                Content="{Binding IsFavorite, Converter={StaticResource BoolToFavorite}}"
+                                                Style="{StaticResource SmallButton}"
+                                                Click="ToggleFavorite_Click" Tag="{Binding}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- 空状态提示 -->
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Visibility="{Binding Songs.Count, Converter={StaticResource NullToVisibility}, ConverterParameter=Inverse}">
+                            <TextBlock Text="🎵" FontSize="48" HorizontalAlignment="Center" Opacity="0.3"/>
+                            <TextBlock Text="拖放音乐文件到这里" Foreground="{StaticResource TextSecondary}" 
+                                       HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- 底部播放控制栏 -->
+            <Border Grid.Row="2" Background="{StaticResource BackgroundCard}" CornerRadius="0,0,16,16" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 当前播放信息 -->
+                    <Grid Grid.Row="0" Margin="0,0,0,12"
+                          Visibility="{Binding HasCurrentSong, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CurrentSong.DisplayName}" 
+                                       Foreground="{StaticResource TextPrimary}"
+                                       FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding CurrentSong.Artist}" 
+                                       Foreground="{StaticResource TextSecondary}"
+                                       FontSize="13" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" 
+                                Content="{Binding CurrentSong.IsFavorite, Converter={StaticResource BoolToFavorite}}"
+                                Style="{StaticResource ControlButton}"
+                                Width="32" Height="32" FontSize="16"
+                                Click="ToggleFavorite_Click" 
+                                Tag="{Binding CurrentSong}"
+                                Margin="8,0,0,0"
+                                ToolTip="收藏/取消收藏"/>
+                    </Grid>
+
+                    <!-- 进度条 -->
+                    <Grid Grid.Row="1" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="45"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="45"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Grid.Column="0" Text="{Binding CurrentPositionText}" 
+                                   Foreground="{StaticResource TextSecondary}" FontSize="11"/>
+                        
+                        <Slider Grid.Column="1" x:Name="ProgressSlider"
+                                Minimum="0" Maximum="{Binding TotalDuration}"
+                                Value="{Binding CurrentPosition, Mode=OneWay}"
+                                VerticalAlignment="Center"
+                                Thumb.DragStarted="ProgressSlider_DragStarted"
+                                Thumb.DragCompleted="ProgressSlider_DragCompleted"
+                                PreviewMouseLeftButtonDown="ProgressSlider_PreviewMouseDown"
+                                Margin="8,0" Height="24">
+                            <Slider.Template>
+                                <ControlTemplate TargetType="Slider">
+                                    <Grid VerticalAlignment="Center">
+                                        <!-- 背景轨道 -->
+                                        <Border Height="4" Background="{StaticResource BorderSubtle}" CornerRadius="2"/>
+                                        <!-- 已播放轨道 -->
+                                        <Border Height="4" Background="{StaticResource AccentColor}" CornerRadius="2"
+                                                HorizontalAlignment="Left">
+                                            <Border.Width>
+                                                <MultiBinding Converter="{StaticResource ProgressToWidthConverter}">
+                                                    <Binding Path="Value" RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                    <Binding Path="Maximum" RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                    <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Grid}"/>
+                                                </MultiBinding>
+                                            </Border.Width>
+                                        </Border>
+                                        <!-- 滑块 -->
+                                        <Track x:Name="PART_Track"
+                                               Minimum="{TemplateBinding Minimum}"
+                                               Maximum="{TemplateBinding Maximum}"
+                                               Value="{TemplateBinding Value}"
+                                               IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
+                                            <Track.Thumb>
+                                                <Thumb Width="16" Height="16" Cursor="Hand">
+                                                    <Thumb.Template>
+                                                        <ControlTemplate TargetType="Thumb">
+                                                            <Ellipse Fill="{StaticResource AccentColor}" 
+                                                                     Width="16" Height="16">
+                                                                <Ellipse.Effect>
+                                                                    <DropShadowEffect Color="#4F8DFF" BlurRadius="10" 
+                                                                                      ShadowDepth="0" Opacity="0.45"/>
+                                                                </Ellipse.Effect>
+                                                            </Ellipse>
+                                                        </ControlTemplate>
+                                                    </Thumb.Template>
+                                                </Thumb>
+                                            </Track.Thumb>
+                                        </Track>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Slider.Template>
+                        </Slider>
+                        
+                        <TextBlock Grid.Column="2" Text="{Binding TotalDurationText}" 
+                                   Foreground="{StaticResource TextSecondary}" FontSize="11"
+                                   HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <!-- 播放控制按钮 -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 左侧: 随机/循环 -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Button Content="🔀" Style="{StaticResource ControlButton}"
+                                    Opacity="{Binding ShuffleMode, Converter={StaticResource BoolToShuffleOpacity}}"
+                                    Click="Shuffle_Click"/>
+                            <Button Content="{Binding RepeatModeText}" Style="{StaticResource ControlButton}"
+                                    Opacity="{Binding RepeatMode, Converter={StaticResource RepeatModeToOpacity}}"
+                                    Click="Repeat_Click"/>
+                        </StackPanel>
+
+                        <!-- 中间: 主控制 -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Content="⏮" Style="{StaticResource ControlButton}" Click="Previous_Click"/>
+                            <Button Content="{Binding IsPlaying, Converter={StaticResource BoolToPlayPause}}" 
+                                    Style="{StaticResource PlayButton}" Click="PlayPause_Click" Margin="8,0"/>
+                            <Button Content="⏭" Style="{StaticResource ControlButton}" Click="Next_Click"/>
+                        </StackPanel>
+
+                        <!-- 右侧: 音量 -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="🔊" Foreground="{StaticResource TextSecondary}" 
+                                       VerticalAlignment="Center" FontSize="16"/>
+                            <Slider x:Name="VolumeSlider" Width="80" Margin="8,0,0,0"
+                                    Minimum="0" Maximum="1" Value="{Binding Volume}"
+                                    VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+        </Border>
+    </Grid>
+</Window>

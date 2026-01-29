@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Resources\favicon.ico</ApplicationIcon>
+    <AssemblyTitle>HiFi Music Player</AssemblyTitle>
+    <Description>简洁高品质音乐播放器</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- NAudio: 专业音频库，支持WASAPI独占模式实现HiFi播放 -->
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <!-- Hardcodet NotifyIcon: 系统托盘支持 -->
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="1.1.0" />
+    <!-- TagLib: 读取音频文件元数据 -->
+    <PackageReference Include="TagLibSharp" Version="2.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\**" />
+    <Resource Include="Resources\**" />
+  </ItemGroup>
+
+</Project>
