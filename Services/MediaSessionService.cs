@@ -124,7 +124,7 @@ public class MediaSessionService : IDisposable
         if (_disposed) return;
         _disposed = true;
         
-        _smtc.ButtonPressed -= Smtc_ButtonPressed;
+            _smtc.ButtonPressed -= Smtc_ButtonPressed;
         _smtc.IsEnabled = false;
         _mediaPlayer.Dispose();
         

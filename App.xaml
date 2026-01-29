@@ -4,16 +4,16 @@
              xmlns:local="clr-namespace:MusicPlayer"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <!-- Modern Dark Theme Palette -->
-        <Color x:Key="Color.Background">#121212</Color>
-        <Color x:Key="Color.Surface">#1E1E1E</Color>
-        <Color x:Key="Color.SurfaceHighlight">#2D2D2D</Color>
+        <!-- Modern Light Theme Palette -->
+        <Color x:Key="Color.Background">#F5F5F7</Color>
+        <Color x:Key="Color.Surface">#FFFFFF</Color>
+        <Color x:Key="Color.SurfaceHighlight">#E8E8ED</Color>
         <Color x:Key="Color.Primary">#6366F1</Color>
         <Color x:Key="Color.PrimaryVariant">#818CF8</Color>
         <Color x:Key="Color.Secondary">#10B981</Color>
-        <Color x:Key="Color.TextPrimary">#FFFFFF</Color>
-        <Color x:Key="Color.TextSecondary">#B0B0B0</Color>
-        <Color x:Key="Color.Border">#333333</Color>
+        <Color x:Key="Color.TextPrimary">#1D1D1F</Color>
+        <Color x:Key="Color.TextSecondary">#86868B</Color>
+        <Color x:Key="Color.Border">#D2D2D7</Color>
 
         <SolidColorBrush x:Key="Brush.Background" Color="{StaticResource Color.Background}"/>
         <SolidColorBrush x:Key="Brush.Surface" Color="{StaticResource Color.Surface}"/>
@@ -124,7 +124,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#1AFFFFFF"/>
+                                <Setter TargetName="border" Property="Background" Value="#1A000000"/>
                                 <Setter TargetName="border" Property="RenderTransform">
                                     <Setter.Value>
                                         <ScaleTransform ScaleX="1.1" ScaleY="1.1"/>
@@ -132,7 +132,7 @@
                                 </Setter>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#33FFFFFF"/>
+                                <Setter TargetName="border" Property="Background" Value="#33000000"/>
                                 <Setter TargetName="border" Property="RenderTransform">
                                     <Setter.Value>
                                         <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
@@ -173,14 +173,14 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Thumb}">
                         <Border x:Name="rectangle"
-                                Background="#33FFFFFF"
+                                Background="#33000000"
                                 CornerRadius="4"
                                 Height="{TemplateBinding Height}"
                                 SnapsToDevicePixels="True"
                                 Width="{TemplateBinding Width}"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="true">
-                                <Setter TargetName="rectangle" Property="Background" Value="#66FFFFFF"/>
+                                <Setter TargetName="rectangle" Property="Background" Value="#66000000"/>
                             </Trigger>
                             <Trigger Property="IsDragging" Value="true">
                                 <Setter TargetName="rectangle" Property="Background" Value="{StaticResource Brush.Primary}"/>
