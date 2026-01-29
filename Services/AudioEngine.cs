@@ -1,18 +1,16 @@
 using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
 using NAudio.CoreAudioApi;
 using MusicPlayer.Models;
 
 namespace MusicPlayer.Services;
 
 /// <summary>
-/// HiFi音频播放引擎 - 使用WASAPI实现高音质，带重采样和音频处理
+/// HiFi音频播放引擎
 /// </summary>
 public class AudioEngine : IDisposable
 {
     private IWavePlayer? _wavePlayer;
     private AudioFileReader? _audioFileReader;
-    private ISampleProvider? _sampleProvider;
     private readonly object _lockObject = new();
     private bool _disposed;
 
@@ -58,23 +56,13 @@ public class AudioEngine : IDisposable
                     Volume = _volume
                 };
 
-                // 创建音频处理链：重采样到 48kHz 以获得更平滑的音质
-                _sampleProvider = _audioFileReader;
-                
-                // 如果采样率不是 48000，进行重采样以减少尖锐感
-                if (_audioFileReader.WaveFormat.SampleRate != 48000)
-                {
-                    var resampler = new WdlResamplingSampleProvider(_audioFileReader, 48000);
-                    _sampleProvider = resampler;
-                }
-
                 // 使用WASAPI输出
                 var shareMode = UseWasapiExclusive ? AudioClientShareMode.Exclusive : AudioClientShareMode.Shared;
                 try
                 {
                     var wasapi = new WasapiOut(shareMode, Latency);
                     wasapi.PlaybackStopped += OnPlaybackStopped;
-                    wasapi.Init(_sampleProvider.ToWaveProvider());
+                    wasapi.Init(_audioFileReader);
                     _wavePlayer = wasapi;
                 }
                 catch
@@ -82,7 +70,7 @@ public class AudioEngine : IDisposable
                     // 如果失败，回退到共享模式
                     var wasapi = new WasapiOut(AudioClientShareMode.Shared, Latency);
                     wasapi.PlaybackStopped += OnPlaybackStopped;
-                    wasapi.Init(_sampleProvider.ToWaveProvider());
+                    wasapi.Init(_audioFileReader);
                     _wavePlayer = wasapi;
                 }
             }
