@@ -9,9 +9,9 @@ namespace MusicPlayer.Services;
 /// </summary>
 public class AudioEngine : IDisposable
 {
-    private IWavePlayer? _wavePlayer;
+    private WasapiOut? _wavePlayer;
     private AudioFileReader? _audioFileReader;
-    private readonly object _lockObject = new();
+    private readonly Lock _lockObject = new();
     private bool _disposed;
 
     public event EventHandler<PlaybackState>? PlaybackStateChanged;

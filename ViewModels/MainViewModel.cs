@@ -14,7 +14,7 @@ public class MainViewModel : INotifyPropertyChanged
     private readonly DispatcherTimer _positionTimer;
     private readonly DispatcherTimer _autoSaveTimer;
     private readonly Random _random = new();
-    private List<int> _shuffleHistory = new(); // 随机播放历史
+    private readonly List<int> _shuffleHistory = []; // 随机播放历史
     private Playlist? _playbackPlaylist;
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -34,8 +34,8 @@ public class MainViewModel : INotifyPropertyChanged
         
         _audioEngine.PlaybackStopped += OnPlaybackStopped;
         
-        Songs = new ObservableCollection<MusicFile>();
-        Playlists = new ObservableCollection<Playlist>();
+        Songs = [];
+        Playlists = [];
     }
 
     #region Properties
@@ -163,7 +163,7 @@ public class MainViewModel : INotifyPropertyChanged
         set { _filteredSongsCount = value; OnPropertyChanged(); }
     }
 
-    private List<MusicFile> _allSongs = new(); // 保存原始列表用于搜索
+    private readonly List<MusicFile> _allSongs = []; // 保存原始列表用于搜索
 
     public Playlist Favorites => _playlistService.Favorites;
     public AppSettings Settings => _playlistService.Settings;
@@ -203,8 +203,7 @@ public class MainViewModel : INotifyPropertyChanged
             if (playlist != null)
             {
                 SetPlaybackPlaylist(playlist);
-                if (CurrentPlaylist == null)
-                    CurrentPlaylist = playlist;
+                CurrentPlaylist ??= playlist;
                 
                 // 恢复歌曲
                 if (!string.IsNullOrEmpty(settings.LastPlayedSongPath))
@@ -284,10 +283,10 @@ public class MainViewModel : INotifyPropertyChanged
         
         var filtered = string.IsNullOrWhiteSpace(SearchText) 
             ? _allSongs 
-            : _allSongs.Where(s => 
+            : [.. _allSongs.Where(s => 
                 s.DisplayName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                 s.Artist.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-                s.Album.Contains(SearchText, StringComparison.OrdinalIgnoreCase)).ToList();
+                s.Album.Contains(SearchText, StringComparison.OrdinalIgnoreCase))];
         
         foreach (var song in filtered)
             Songs.Add(song);
@@ -432,7 +431,7 @@ public class MainViewModel : INotifyPropertyChanged
         if (ShuffleMode && _shuffleHistory.Count > 0)
         {
             // 随机模式：回到上一首播放的歌曲
-            int prevIndex = _shuffleHistory[_shuffleHistory.Count - 1];
+            int prevIndex = _shuffleHistory[^1];
             _shuffleHistory.RemoveAt(_shuffleHistory.Count - 1);
             PlaySong(playbackSongs[prevIndex]);
         }

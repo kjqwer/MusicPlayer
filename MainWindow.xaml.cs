@@ -22,6 +22,7 @@ namespace MusicPlayer;
 
 public partial class MainWindow : Window
 {
+    private static readonly string[] AudioExtensions = [".mp3", ".flac", ".wav", ".aac", ".m4a", ".ogg", ".wma", ".aiff", ".ape"];
     private readonly MainViewModel _viewModel;
     private readonly GlobalHotkeyService _hotkeyService;
     private readonly MediaSessionService _mediaSessionService;
@@ -320,8 +321,10 @@ public partial class MainWindow : Window
             var name = Path.GetFileName(dialog.SelectedPath) ?? "新文件夹";
             
             // 显示加载进度
-            var loadingDialog = new Views.LoadingDialog("扫描音乐文件...");
-            loadingDialog.Owner = this;
+            var loadingDialog = new Views.LoadingDialog("扫描音乐文件...")
+            {
+                Owner = this
+            };
             
             var progress = new Progress<int>(percent =>
             {
@@ -331,7 +334,7 @@ public partial class MainWindow : Window
             // 异步加载
             var task = Task.Run(async () =>
             {
-                var playlist = await _viewModel.CreateFolderPlaylistAsync(name, new[] { dialog.SelectedPath }, progress);
+                var playlist = await _viewModel.CreateFolderPlaylistAsync(name, [dialog.SelectedPath], progress);
                 return playlist;
             });
             
@@ -405,7 +408,7 @@ public partial class MainWindow : Window
 
             if (targetSong != null)
             {
-                await _viewModel.AddFilesToPlaylistAsync(playlist, new[] { targetSong.FilePath });
+                await _viewModel.AddFilesToPlaylistAsync(playlist, [targetSong.FilePath]);
             }
         }
     }
@@ -422,7 +425,7 @@ public partial class MainWindow : Window
             {
                 if (SongList.SelectedItem is MusicFile song)
                 {
-                    await _viewModel.AddFilesToPlaylistAsync(playlist, new[] { song.FilePath });
+                    await _viewModel.AddFilesToPlaylistAsync(playlist, [song.FilePath]);
                     MessageBox.Show($"已添加到 {playlist.Name}", "成功");
                 }
             };
@@ -494,8 +497,7 @@ public partial class MainWindow : Window
         {
             var files = (string[])e.Data.GetData(DataFormats.FileDrop);
             var audioFiles = files.Where(f => 
-                new[] { ".mp3", ".flac", ".wav", ".aac", ".m4a", ".ogg", ".wma", ".aiff", ".ape" }
-                    .Contains(Path.GetExtension(f).ToLower())).ToArray();
+                AudioExtensions.Contains(Path.GetExtension(f).ToLower())).ToArray();
 
             if (audioFiles.Length > 0)
             {
