@@ -273,7 +273,7 @@ public partial class MainWindow : Window
     {
         if (SongList.SelectedItem is MusicFile song)
         {
-            _viewModel.PlaySong(song);
+            _viewModel.PlaySong(song, _viewModel.CurrentPlaylist);
         }
     }
 
@@ -469,6 +469,14 @@ public partial class MainWindow : Window
         {
             await _viewModel.RefreshFolderPlaylistAsync(playlist);
             MessageBox.Show("播放列表已刷新", "成功");
+        }
+    }
+
+    private void PlayPlaylist_Click(object sender, RoutedEventArgs e)
+    {
+        if (PlaylistList.SelectedItem is Playlist playlist)
+        {
+            _viewModel.PlayPlaylist(playlist);
         }
     }
 

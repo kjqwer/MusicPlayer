@@ -62,6 +62,7 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+            <EventSetter Event="PreviewMouseRightButtonDown" Handler="OnPreviewMouseRightButtonDown"/>
         </Style>
 
         <Style x:Key="Style.ListBoxItem.Song" TargetType="ListBoxItem">
@@ -207,6 +208,7 @@
                                      ItemContainerStyle="{StaticResource Style.ListBoxItem.Playlist}">
                                 <ListBox.ContextMenu>
                                     <ContextMenu Background="{StaticResource Brush.Surface}" Foreground="{StaticResource Brush.TextPrimary}" BorderBrush="{StaticResource Brush.Border}">
+                                        <MenuItem Header="播放" Click="PlayPlaylist_Click"/>
                                         <MenuItem Header="删除播放列表" Click="DeletePlaylist_Click"/>
                                         <MenuItem Header="刷新" Click="RefreshPlaylist_Click"/>
                                     </ContextMenu>
@@ -321,7 +323,7 @@
                         <!-- Songs -->
                         <ListBox Grid.Row="2" x:Name="SongList"
                                  ItemsSource="{Binding Songs}"
-                                 SelectedItem="{Binding CurrentSong}"
+                                 SelectedItem="{Binding SelectedSong}"
                                  ItemContainerStyle="{StaticResource Style.ListBoxItem.Song}"
                                  MouseDoubleClick="SongList_MouseDoubleClick"
                                  AllowDrop="True" Drop="SongList_Drop"

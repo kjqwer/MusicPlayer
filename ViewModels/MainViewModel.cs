@@ -15,6 +15,7 @@ public class MainViewModel : INotifyPropertyChanged
     private readonly DispatcherTimer _autoSaveTimer;
     private readonly Random _random = new();
     private List<int> _shuffleHistory = new(); // 随机播放历史
+    private Playlist? _playbackPlaylist;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -50,6 +51,13 @@ public class MainViewModel : INotifyPropertyChanged
     }
 
     public bool HasCurrentSong => CurrentSong != null;
+
+    private MusicFile? _selectedSong;
+    public MusicFile? SelectedSong
+    {
+        get => _selectedSong;
+        set { _selectedSong = value; OnPropertyChanged(); }
+    }
 
     private Playlist? _currentPlaylist;
     public Playlist? CurrentPlaylist
@@ -194,12 +202,14 @@ public class MainViewModel : INotifyPropertyChanged
             var playlist = Playlists.FirstOrDefault(p => p.Id == settings.LastPlaylistId);
             if (playlist != null)
             {
-                CurrentPlaylist = playlist;
+                SetPlaybackPlaylist(playlist);
+                if (CurrentPlaylist == null)
+                    CurrentPlaylist = playlist;
                 
                 // 恢复歌曲
                 if (!string.IsNullOrEmpty(settings.LastPlayedSongPath))
                 {
-                    var song = Songs.FirstOrDefault(s => 
+                    var song = playlist.Songs.FirstOrDefault(s => 
                         s.FilePath.Equals(settings.LastPlayedSongPath, StringComparison.OrdinalIgnoreCase));
                     
                     if (song != null)
@@ -237,7 +247,7 @@ public class MainViewModel : INotifyPropertyChanged
         _playlistService.Settings.RepeatMode = RepeatMode;
         _playlistService.Settings.CompactMode = CompactMode;
         _playlistService.Settings.LastPlayedSongPath = CurrentSong?.FilePath;
-        _playlistService.Settings.LastPlaylistId = CurrentPlaylist?.Id;
+        _playlistService.Settings.LastPlaylistId = _playbackPlaylist?.Id;
         _playlistService.Settings.LastPosition = CurrentPosition;
         
         await _playlistService.SaveAsync();
@@ -255,7 +265,6 @@ public class MainViewModel : INotifyPropertyChanged
     {
         Songs.Clear();
         _allSongs.Clear();
-        ResetShuffleHistory(); // 切换播放列表时重置随机历史
         SearchText = string.Empty; // 切换播放列表时清空搜索
         
         if (CurrentPlaylist == null) return;
@@ -295,6 +304,9 @@ public class MainViewModel : INotifyPropertyChanged
     {
         try
         {
+            if (_playbackPlaylist == null && CurrentPlaylist != null)
+                SetPlaybackPlaylist(CurrentPlaylist);
+
             // 先停止定时器，避免在加载过程中更新位置
             _positionTimer.Stop();
             
@@ -302,6 +314,8 @@ public class MainViewModel : INotifyPropertyChanged
             _audioEngine.Play();
             
             CurrentSong = song;
+            if (CurrentPlaylist != null && _playbackPlaylist != null && CurrentPlaylist.Id == _playbackPlaylist.Id)
+                SelectedSong = song;
             TotalDuration = _audioEngine.TotalDuration.TotalSeconds;
             CurrentPosition = 0; // 确保在TotalDuration之后设置，避免百分比计算问题
             IsPlaying = true;
@@ -314,12 +328,20 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    public void PlaySong(MusicFile song, Playlist? sourcePlaylist)
+    {
+        if (sourcePlaylist != null && (_playbackPlaylist == null || _playbackPlaylist.Id != sourcePlaylist.Id))
+            SetPlaybackPlaylist(sourcePlaylist);
+        PlaySong(song);
+    }
+
     public void TogglePlayPause()
     {
         if (CurrentSong == null)
         {
-            if (Songs.Count > 0)
-                PlaySong(Songs[0]);
+            var playlist = _playbackPlaylist ?? CurrentPlaylist;
+            if (playlist != null && playlist.Songs.Count > 0)
+                PlaySong(playlist.Songs[0], playlist);
             return;
         }
 
@@ -347,16 +369,17 @@ public class MainViewModel : INotifyPropertyChanged
 
     public void PlayNext()
     {
-        if (Songs.Count == 0) return;
+        var playbackSongs = _playbackPlaylist?.Songs;
+        if (playbackSongs == null || playbackSongs.Count == 0) return;
         
         // 如果没有当前歌曲，播放第一首
-        if (CurrentSong == null)
+        if (CurrentSong == null || !playbackSongs.Contains(CurrentSong))
         {
-            PlaySong(Songs[0]);
+            PlaySong(playbackSongs[0]);
             return;
         }
         
-        int currentIndex = Songs.IndexOf(CurrentSong);
+        int currentIndex = playbackSongs.IndexOf(CurrentSong);
         int nextIndex;
         
         if (ShuffleMode)
@@ -365,34 +388,35 @@ public class MainViewModel : INotifyPropertyChanged
             _shuffleHistory.Add(currentIndex);
             
             // 如果所有歌曲都播放过，重置历史
-            if (_shuffleHistory.Count >= Songs.Count)
+            if (_shuffleHistory.Count >= playbackSongs.Count)
                 _shuffleHistory.Clear();
             
             // 从未播放的歌曲中随机选择
-            var unplayed = Enumerable.Range(0, Songs.Count)
+            var unplayed = Enumerable.Range(0, playbackSongs.Count)
                 .Except(_shuffleHistory)
                 .ToList();
             
             if (unplayed.Count > 0)
                 nextIndex = unplayed[_random.Next(unplayed.Count)];
             else
-                nextIndex = _random.Next(Songs.Count);
+                nextIndex = _random.Next(playbackSongs.Count);
         }
         else
         {
-            nextIndex = (currentIndex + 1) % Songs.Count;
+            nextIndex = (currentIndex + 1) % playbackSongs.Count;
         }
         
-        PlaySong(Songs[nextIndex]);
+        PlaySong(playbackSongs[nextIndex]);
     }
 
     public void PlayPrevious()
     {
-        if (Songs.Count == 0) return;
+        var playbackSongs = _playbackPlaylist?.Songs;
+        if (playbackSongs == null || playbackSongs.Count == 0) return;
         
-        if (CurrentSong == null)
+        if (CurrentSong == null || !playbackSongs.Contains(CurrentSong))
         {
-            PlaySong(Songs[0]);
+            PlaySong(playbackSongs[0]);
             return;
         }
         
@@ -403,20 +427,27 @@ public class MainViewModel : INotifyPropertyChanged
             return;
         }
         
-        int currentIndex = Songs.IndexOf(CurrentSong);
+        int currentIndex = playbackSongs.IndexOf(CurrentSong);
         
         if (ShuffleMode && _shuffleHistory.Count > 0)
         {
             // 随机模式：回到上一首播放的歌曲
             int prevIndex = _shuffleHistory[_shuffleHistory.Count - 1];
             _shuffleHistory.RemoveAt(_shuffleHistory.Count - 1);
-            PlaySong(Songs[prevIndex]);
+            PlaySong(playbackSongs[prevIndex]);
         }
         else
         {
-            int prevIndex = currentIndex > 0 ? currentIndex - 1 : Songs.Count - 1;
-            PlaySong(Songs[prevIndex]);
+            int prevIndex = currentIndex > 0 ? currentIndex - 1 : playbackSongs.Count - 1;
+            PlaySong(playbackSongs[prevIndex]);
         }
+    }
+
+    public void PlayPlaylist(Playlist playlist)
+    {
+        SetPlaybackPlaylist(playlist);
+        if (playlist.Songs.Count > 0)
+            PlaySong(playlist.Songs[0], playlist);
     }
     
     /// <summary>
@@ -425,6 +456,13 @@ public class MainViewModel : INotifyPropertyChanged
     public void ResetShuffleHistory()
     {
         _shuffleHistory.Clear();
+    }
+
+    private void SetPlaybackPlaylist(Playlist playlist)
+    {
+        if (_playbackPlaylist != null && _playbackPlaylist.Id == playlist.Id) return;
+        _playbackPlaylist = playlist;
+        ResetShuffleHistory();
     }
 
     public void Seek(double seconds)
@@ -442,6 +480,9 @@ public class MainViewModel : INotifyPropertyChanged
     {
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
+            var playbackSongs = _playbackPlaylist?.Songs;
+            if (playbackSongs == null || playbackSongs.Count == 0) return;
+
             // 歌曲播放完成（不是手动停止）
             if (CurrentPosition >= TotalDuration - 0.5)
             {
@@ -459,12 +500,12 @@ public class MainViewModel : INotifyPropertyChanged
                         break;
                         
                     default: // RepeatMode.None
-                        int currentIndex = CurrentSong != null ? Songs.IndexOf(CurrentSong) : -1;
+                        int currentIndex = CurrentSong != null ? playbackSongs.IndexOf(CurrentSong) : -1;
                         
                         if (ShuffleMode)
                         {
                             // 随机模式下无循环：播放完所有未播放的歌曲后停止
-                            if (_shuffleHistory.Count < Songs.Count - 1)
+                            if (_shuffleHistory.Count < playbackSongs.Count - 1)
                             {
                                 PlayNext();
                             }
@@ -479,7 +520,7 @@ public class MainViewModel : INotifyPropertyChanged
                         else
                         {
                             // 顺序模式：播放到最后一首后停止
-                            if (currentIndex < Songs.Count - 1)
+                            if (currentIndex < playbackSongs.Count - 1)
                             {
                                 PlayNext();
                             }
