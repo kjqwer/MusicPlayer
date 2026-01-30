@@ -15,6 +15,7 @@
   <ItemGroup>
     <!-- NAudio: 专业音频库，支持WASAPI独占模式实现HiFi播放 -->
     <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="NAudio.Vorbis" Version="1.5.0" />
     <!-- Hardcodet NotifyIcon: 系统托盘支持 -->
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="1.1.0" />
     <!-- TagLib: 读取音频文件元数据 -->

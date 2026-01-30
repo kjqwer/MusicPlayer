@@ -1,6 +1,9 @@
 using NAudio.Wave;
 using NAudio.CoreAudioApi;
 using MusicPlayer.Models;
+using NAudio.Vorbis;
+using NAudio.Wave.SampleProviders;
+using System.IO;
 
 namespace MusicPlayer.Services;
 
@@ -10,7 +13,8 @@ namespace MusicPlayer.Services;
 public class AudioEngine : IDisposable
 {
     private WasapiOut? _wavePlayer;
-    private AudioFileReader? _audioFileReader;
+    private WaveStream? _reader;
+    private VolumeSampleProvider? _volumeProvider;
     private readonly Lock _lockObject = new();
     private bool _disposed;
 
@@ -20,8 +24,8 @@ public class AudioEngine : IDisposable
 
     public bool IsPlaying => _wavePlayer?.PlaybackState == PlaybackState.Playing;
     public bool IsPaused => _wavePlayer?.PlaybackState == PlaybackState.Paused;
-    public TimeSpan CurrentPosition => _audioFileReader?.CurrentTime ?? TimeSpan.Zero;
-    public TimeSpan TotalDuration => _audioFileReader?.TotalTime ?? TimeSpan.Zero;
+    public TimeSpan CurrentPosition => _reader?.CurrentTime ?? TimeSpan.Zero;
+    public TimeSpan TotalDuration => _reader?.TotalTime ?? TimeSpan.Zero;
     
     private float _volume = 0.7f;
     public float Volume
@@ -30,8 +34,8 @@ public class AudioEngine : IDisposable
         set
         {
             _volume = Math.Clamp(value, 0f, 1f);
-            if (_audioFileReader != null)
-                _audioFileReader.Volume = _volume;
+            if (_volumeProvider != null)
+                _volumeProvider.Volume = _volume;
         }
     }
 
@@ -49,15 +53,19 @@ public class AudioEngine : IDisposable
             
             try
             {
-                _audioFileReader = new AudioFileReader(filePath)
-                {
-                    Volume = _volume
-                };
+                var ext = Path.GetExtension(filePath).ToLowerInvariant();
+                _reader = ext is ".ogg" or ".oga"
+                    ? new VorbisWaveReader(filePath)
+                    : new AudioFileReader(filePath);
+
+                var sampleProvider = _reader.ToSampleProvider();
+                _volumeProvider = new VolumeSampleProvider(sampleProvider) { Volume = _volume };
+                var outputProvider = new SampleToWaveProvider(_volumeProvider);
 
                 // 始终使用WASAPI共享模式，允许其他应用同时播放音频
                 var wasapi = new WasapiOut(AudioClientShareMode.Shared, Latency);
                 wasapi.PlaybackStopped += OnPlaybackStopped;
-                wasapi.Init(_audioFileReader);
+                wasapi.Init(outputProvider);
                 _wavePlayer = wasapi;
             }
             catch (Exception ex)
@@ -95,11 +103,11 @@ public class AudioEngine : IDisposable
                 _wavePlayer.Dispose();
                 _wavePlayer = null;
             }
-            
-            if (_audioFileReader != null)
+            _volumeProvider = null;
+            if (_reader != null)
             {
-                _audioFileReader.Dispose();
-                _audioFileReader = null;
+                _reader.Dispose();
+                _reader = null;
             }
             
             PlaybackStateChanged?.Invoke(this, PlaybackState.Stopped);
@@ -110,9 +118,9 @@ public class AudioEngine : IDisposable
     {
         lock (_lockObject)
         {
-            if (_audioFileReader != null)
+            if (_reader != null)
             {
-                _audioFileReader.CurrentTime = position;
+                _reader.CurrentTime = position;
                 PositionChanged?.Invoke(this, position);
             }
         }
@@ -120,9 +128,9 @@ public class AudioEngine : IDisposable
 
     public void SeekPercent(double percent)
     {
-        if (_audioFileReader != null)
+        if (_reader != null)
         {
-            var position = TimeSpan.FromSeconds(_audioFileReader.TotalTime.TotalSeconds * percent);
+            var position = TimeSpan.FromSeconds(_reader.TotalTime.TotalSeconds * percent);
             Seek(position);
         }
     }
