@@ -35,9 +35,7 @@ public class AudioEngine : IDisposable
         }
     }
 
-    // 默认使用共享模式，允许其他应用同时播放音频
-    public bool UseWasapiExclusive { get; set; } = false;
-    // 增加延迟缓冲，减少爆音和尖锐感
+    // 延迟缓冲（毫秒）
     public int Latency { get; set; } = 200;
 
     /// <summary>
@@ -56,23 +54,11 @@ public class AudioEngine : IDisposable
                     Volume = _volume
                 };
 
-                // 使用WASAPI输出
-                var shareMode = UseWasapiExclusive ? AudioClientShareMode.Exclusive : AudioClientShareMode.Shared;
-                try
-                {
-                    var wasapi = new WasapiOut(shareMode, Latency);
-                    wasapi.PlaybackStopped += OnPlaybackStopped;
-                    wasapi.Init(_audioFileReader);
-                    _wavePlayer = wasapi;
-                }
-                catch
-                {
-                    // 如果失败，回退到共享模式
-                    var wasapi = new WasapiOut(AudioClientShareMode.Shared, Latency);
-                    wasapi.PlaybackStopped += OnPlaybackStopped;
-                    wasapi.Init(_audioFileReader);
-                    _wavePlayer = wasapi;
-                }
+                // 始终使用WASAPI共享模式，允许其他应用同时播放音频
+                var wasapi = new WasapiOut(AudioClientShareMode.Shared, Latency);
+                wasapi.PlaybackStopped += OnPlaybackStopped;
+                wasapi.Init(_audioFileReader);
+                _wavePlayer = wasapi;
             }
             catch (Exception ex)
             {

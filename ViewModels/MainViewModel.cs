@@ -173,7 +173,6 @@ public class MainViewModel : INotifyPropertyChanged
         ShuffleMode = _playlistService.Settings.ShuffleMode;
         RepeatMode = _playlistService.Settings.RepeatMode;
         CompactMode = _playlistService.Settings.CompactMode;
-        _audioEngine.UseWasapiExclusive = _playlistService.Settings.UseWasapiExclusive;
         _audioEngine.Latency = _playlistService.Settings.AudioLatency;
         
         RefreshPlaylists();
