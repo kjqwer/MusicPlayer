@@ -15,10 +15,10 @@ using DragEventArgs = System.Windows.DragEventArgs;
 using DataFormats = System.Windows.DataFormats;
 using MessageBox = System.Windows.MessageBox;
 using MenuItem = System.Windows.Controls.MenuItem;
-using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;                                                                                                                                                                       
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
-namespace MusicPlayer;
+namespace MusicPlayer; 
 
 public partial class MainWindow : Window
 {

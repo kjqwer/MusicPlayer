@@ -310,7 +310,7 @@ public class MainViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"无法播放: {ex.Message}", "错误");
+            System.Windows.MessageBox.Show($"无法播放: {song.DisplayName}\n路径: {song.FilePath}\n原因: {ex.Message}", "错误");
         }
     }
 

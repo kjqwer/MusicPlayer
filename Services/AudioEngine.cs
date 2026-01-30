@@ -62,7 +62,7 @@ public class AudioEngine : IDisposable
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"无法加载音频文件: {ex.Message}", ex);
+                throw new InvalidOperationException($"无法加载音频文件: {filePath}. {ex.Message}", ex);
             }
         }
     }
