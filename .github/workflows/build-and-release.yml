@@ -1,0 +1,104 @@
+name: Build and Release
+
+on:
+  # 普通推送时自动构建，推送 tag 时触发发版
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*.*.*'
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  PROJECT_PATH: 'MusicPlayer.csproj'
+  PUBLISH_PATH: './publish'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 安装 .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: 'preview'
+
+    - name: 恢复依赖
+      run: dotnet restore ${{ env.PROJECT_PATH }}
+
+    - name: 构建项目
+      run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
+
+    - name: 发布项目
+      run: |
+        dotnet publish ${{ env.PROJECT_PATH }} -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ${{ env.PUBLISH_PATH }}
+
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: MusicPlayer-win-x64
+        path: ${{ env.PUBLISH_PATH }}/MusicPlayer.exe
+        retention-days: 30
+
+  release:
+    # 仅在推送 tag 时执行发版
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 获取版本号和发布说明
+      id: get_info
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        # 获取 tag 的注释信息
+        NOTES=$(git tag -l --format='%(contents)' "v$VERSION" | head -20)
+        echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+        echo "$NOTES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: 下载构建产物
+      uses: actions/download-artifact@v4
+      with:
+        name: MusicPlayer-win-x64
+        path: ./release
+
+    - name: 创建压缩包
+      run: |
+        cd release
+        zip -r ../MusicPlayer-v${{ steps.get_info.outputs.VERSION }}-win-x64.zip .
+
+    - name: 创建 GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: MusicPlayer v${{ steps.get_info.outputs.VERSION }}
+        body: |
+          ## 🎵 HiFi Music Player v${{ steps.get_info.outputs.VERSION }}
+          
+          ${{ steps.get_info.outputs.NOTES }}
+          
+          ### 下载
+          - `MusicPlayer-v${{ steps.get_info.outputs.VERSION }}-win-x64.zip` - Windows x64 单文件版本
+          
+          ### 系统要求
+          - Windows 10 19041 或更高版本
+        files: |
+          MusicPlayer-v${{ steps.get_info.outputs.VERSION }}-win-x64.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
