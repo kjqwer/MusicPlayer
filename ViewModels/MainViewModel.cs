@@ -33,6 +33,7 @@ public class MainViewModel : INotifyPropertyChanged
         _autoSaveTimer.Start();
         
         _audioEngine.PlaybackStopped += OnPlaybackStopped;
+        _audioEngine.PlaybackFailed += OnPlaybackFailed;
         
         Songs = [];
         Playlists = [];
@@ -310,16 +311,19 @@ public class MainViewModel : INotifyPropertyChanged
             _positionTimer.Stop();
             
             _audioEngine.Load(song.FilePath);
-            _audioEngine.Play();
             
             CurrentSong = song;
             if (CurrentPlaylist != null && _playbackPlaylist != null && CurrentPlaylist.Id == _playbackPlaylist.Id)
                 SelectedSong = song;
             TotalDuration = _audioEngine.TotalDuration.TotalSeconds;
             CurrentPosition = 0; // 确保在TotalDuration之后设置，避免百分比计算问题
-            IsPlaying = true;
             
-            _positionTimer.Start();
+            // 播放并启动定时器
+            if (_audioEngine.Play())
+            {
+                IsPlaying = true;
+                _positionTimer.Start();
+            }
         }
         catch (Exception ex)
         {
@@ -352,9 +356,13 @@ public class MainViewModel : INotifyPropertyChanged
         }
         else
         {
-            _audioEngine.Play();
-            IsPlaying = true;
-            _positionTimer.Start();
+            // 尝试播放，只有成功时才更新状态
+            if (_audioEngine.Play())
+            {
+                IsPlaying = true;
+                _positionTimer.Start();
+            }
+            // 如果播放失败，PlaybackFailed 事件会处理重新加载
         }
     }
 
@@ -475,6 +483,44 @@ public class MainViewModel : INotifyPropertyChanged
         CurrentPosition = _audioEngine.CurrentPosition.TotalSeconds;
     }
 
+    /// <summary>
+    /// 播放失败时的处理（如休眠后设备失效）
+    /// 尝试重新加载并播放当前歌曲
+    /// </summary>
+    private void OnPlaybackFailed(object? sender, EventArgs e)
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            if (CurrentSong == null) return;
+            
+            try
+            {
+                // 重新加载并播放当前歌曲
+                var position = CurrentPosition; // 保存当前位置
+                _audioEngine.Load(CurrentSong.FilePath);
+                TotalDuration = _audioEngine.TotalDuration.TotalSeconds;
+                
+                // 如果之前有播放进度，恢复位置
+                if (position > 0 && position < TotalDuration - 1)
+                {
+                    _audioEngine.Seek(TimeSpan.FromSeconds(position));
+                }
+                
+                if (_audioEngine.Play())
+                {
+                    IsPlaying = true;
+                    _positionTimer.Start();
+                }
+            }
+            catch
+            {
+                // 如果重新加载也失败，提示用户
+                IsPlaying = false;
+                _positionTimer.Stop();
+            }
+        });
+    }
+
     private void OnPlaybackStopped(object? sender, EventArgs e)
     {
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -490,7 +536,12 @@ public class MainViewModel : INotifyPropertyChanged
                     case RepeatMode.One:
                         // 单曲循环
                         Seek(0);
-                        _audioEngine.Play();
+                        if (!_audioEngine.Play())
+                        {
+                            // 播放失败，PlaybackFailed 会处理重新加载
+                            IsPlaying = false;
+                            _positionTimer.Stop();
+                        }
                         break;
                         
                     case RepeatMode.All:

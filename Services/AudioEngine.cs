@@ -17,10 +17,12 @@ public class AudioEngine : IDisposable
     private VolumeSampleProvider? _volumeProvider;
     private readonly Lock _lockObject = new();
     private bool _disposed;
+    private string? _currentFilePath; // 记录当前加载的文件路径，用于重新加载
 
     public event EventHandler<PlaybackState>? PlaybackStateChanged;
     public event EventHandler<TimeSpan>? PositionChanged;
     public event EventHandler? PlaybackStopped;
+    public event EventHandler? PlaybackFailed; // 播放失败事件（设备失效等）
 
     public bool IsPlaying => _wavePlayer?.PlaybackState == PlaybackState.Playing;
     public bool IsPaused => _wavePlayer?.PlaybackState == PlaybackState.Paused;
@@ -67,20 +69,52 @@ public class AudioEngine : IDisposable
                 wasapi.PlaybackStopped += OnPlaybackStopped;
                 wasapi.Init(outputProvider);
                 _wavePlayer = wasapi;
+                _currentFilePath = filePath; // 记录当前文件路径
             }
             catch (Exception ex)
             {
+                _currentFilePath = null;
                 throw new InvalidOperationException($"无法加载音频文件: {filePath}. {ex.Message}", ex);
             }
         }
     }
+    
+    /// <summary>
+    /// 获取当前加载的文件路径
+    /// </summary>
+    public string? CurrentFilePath => _currentFilePath;
 
-    public void Play()
+    /// <summary>
+    /// 开始播放
+    /// </summary>
+    /// <returns>是否成功开始播放</returns>
+    public bool Play()
     {
         lock (_lockObject)
         {
-            _wavePlayer?.Play();
-            PlaybackStateChanged?.Invoke(this, PlaybackState.Playing);
+            if (_wavePlayer == null) return false;
+            
+            try
+            {
+                _wavePlayer.Play();
+                
+                // 检查播放是否真的成功
+                // 在设备失效后，Play() 可能不抛异常但状态不会变成 Playing
+                if (_wavePlayer.PlaybackState != PlaybackState.Playing)
+                {
+                    PlaybackFailed?.Invoke(this, EventArgs.Empty);
+                    return false;
+                }
+                
+                PlaybackStateChanged?.Invoke(this, PlaybackState.Playing);
+                return true;
+            }
+            catch (Exception)
+            {
+                // 音频设备可能已失效（如休眠后），通知上层重新加载
+                PlaybackFailed?.Invoke(this, EventArgs.Empty);
+                return false;
+            }
         }
     }
 
